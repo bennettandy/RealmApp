@@ -1,6 +1,7 @@
 package avsoftware.com.realmapp
 
 import android.app.Application
+import avsoftware.com.realmapp.model.firstParcel
 import io.realm.Realm
 import io.realm.RealmConfiguration
 
@@ -18,5 +19,12 @@ class RealmApplication : Application() {
 
         Realm.setDefaultConfiguration(config)
 
+//        Stetho.initialize(
+//                Stetho.newInitializerBuilder(this)
+//                        .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
+//                        .enableWebKitInspector(RealmInspectorModulesProvider.builder(this).build())
+//                        .build());
     }
+    
+
 }

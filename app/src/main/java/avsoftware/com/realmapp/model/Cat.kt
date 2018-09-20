@@ -1,12 +1,6 @@
 package avsoftware.com.realmapp.model
 
-import io.realm.RealmObject
-import io.realm.RealmResults
-import io.realm.annotations.LinkingObjects
+import avsoftware.com.realmapp.data.Person
 
-open class Cat : RealmObject() {
-    var name: String? = null
+data class Cat(val name: String, val owners : List<Person>)
 
-    @LinkingObjects("cats")
-    val owners: RealmResults<Person>? = null
-}

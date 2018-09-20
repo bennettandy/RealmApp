@@ -2,12 +2,18 @@ package avsoftware.com.realmapp
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.HandlerThread
 import android.util.Log
 import android.widget.LinearLayout
 import android.widget.TextView
-import avsoftware.com.realmapp.model.Cat
-import avsoftware.com.realmapp.model.Dog
-import avsoftware.com.realmapp.model.Person
+import avsoftware.com.realmapp.data.Cat
+import avsoftware.com.realmapp.data.Dog
+import avsoftware.com.realmapp.data.Parcel
+import avsoftware.com.realmapp.data.Person
+import avsoftware.com.realmapp.model.firstParcel
+import io.reactivex.Scheduler
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.realm.Realm
 import io.realm.Sort
 import io.realm.kotlin.createObject
@@ -20,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val TAG: String = "MainActivity"
     }
+
+    private val disposable = CompositeDisposable()
 
     private lateinit var rootLayout: LinearLayout
     private lateinit var realm: Realm
@@ -43,6 +51,8 @@ class MainActivity : AppCompatActivity() {
         realm.executeTransaction { realm ->
             realm.deleteAll()
         }
+
+        experiment(realm)
 
         // These operations are small enough that
         // we can generally safely run them on the UI thread.
@@ -75,6 +85,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         realm.close() // Remember to close Realm when done.
+        disposable.dispose()
     }
 
     private fun showStatus(text: String) {
@@ -191,4 +202,41 @@ class MainActivity : AppCompatActivity() {
 
         return status
     }
+
+
+    private fun experiment(realm: Realm) {
+
+        val handlerThread = HandlerThread("LOOPER_SCHEDULER");
+        handlerThread.start();
+        var looperScheduler : Scheduler? = null
+        synchronized(handlerThread) {
+            looperScheduler  = AndroidSchedulers.from(handlerThread.getLooper());
+        }
+
+
+
+        disposable.add(firstParcel()
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnNext { t ->
+                    showStatus("Parcel received named: ${t.name}" )
+                    Log.d("xx", "Parcel: $t") }
+
+                .doOnError { error ->
+                    showStatus("${error.message}" )
+                    Log.d("xx","Error $error")}
+                .subscribeOn( looperScheduler )
+                .subscribe())
+
+        realm.executeTransaction { rlm ->
+            // Add a parcel
+            val parcel = rlm.createObject<Parcel>(0)
+            parcel.name = "A Parcel"
+        }
+
+        val parc = realm.where<Parcel>().findFirst()!!
+        showStatus("${parc.name}" )
+
+    }
+
+
 }

@@ -1,12 +1,3 @@
 package avsoftware.com.realmapp.model
 
-import io.realm.RealmObject
-import io.realm.RealmResults
-import io.realm.annotations.LinkingObjects
-
-open class Dog : RealmObject() {
-    var name: String? = null
-
-    @LinkingObjects("dog")
-    val owners: RealmResults<Person>? = null
-}
+data class Dog(val name: String, val owners : List<Person>)
