@@ -10,7 +10,6 @@ import avsoftware.com.realmapp.data.Dog
 import avsoftware.com.realmapp.data.Parcel
 import avsoftware.com.realmapp.data.Person
 import avsoftware.com.realmapp.repository.ParcelRepository
-import io.reactivex.BackpressureStrategy
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.realm.Realm
@@ -51,7 +50,9 @@ class MainActivity : AppCompatActivity() {
             realm.deleteAll()
         }
 
-        experiment()
+        doAsync {
+            insertsWithCountObserver()
+        }
 
         // These operations are small enough that
         // we can generally safely run them on the UI thread.
@@ -203,14 +204,14 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun experiment() {
+    private fun insertsWithCountObserver() {
 
         val parcelRepository = ParcelRepository()
 
         // Parcel Count Observer
         disposable.add(parcelRepository.parcelCount
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnNext { Log.d("XXX", "Count $it") }
+                .doOnNext { Log.d(TAG, "Count $it") }
                 .doOnNext { showStatus("Parcel count $it") }
                 .subscribe())
 
@@ -218,10 +219,12 @@ class MainActivity : AppCompatActivity() {
             // Add a parcel
             val parcel = realm.createObject<Parcel>(UUID.randomUUID().getMostSignificantBits())
             parcel.name = name
+            //Log.d("XXX", "Parcel: $name")
         }
 
         fun insertParcels( number : Int){
             doAsync {
+                Log.d(TAG, "Insert $number")
                 Realm.getDefaultInstance().use { realm ->
                     realm.executeTransaction { rlm ->
                         (1..number).forEach {
@@ -232,7 +235,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val values = listOf(100,500,1000,10000,3,4,5)
+        val values = listOf(1000,5000,50000,10000,300,400,500)
 
         values.forEach { insertParcels(it) }
 
