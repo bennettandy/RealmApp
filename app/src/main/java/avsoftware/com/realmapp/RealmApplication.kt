@@ -1,7 +1,6 @@
 package avsoftware.com.realmapp
 
 import android.app.Application
-import avsoftware.com.realmapp.model.firstParcel
 import io.realm.Realm
 import io.realm.RealmConfiguration
 

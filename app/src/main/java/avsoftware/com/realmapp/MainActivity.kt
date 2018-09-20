@@ -1,8 +1,7 @@
 package avsoftware.com.realmapp
 
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.os.HandlerThread
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -10,8 +9,8 @@ import avsoftware.com.realmapp.data.Cat
 import avsoftware.com.realmapp.data.Dog
 import avsoftware.com.realmapp.data.Parcel
 import avsoftware.com.realmapp.data.Person
-import avsoftware.com.realmapp.model.firstParcel
-import io.reactivex.Scheduler
+import avsoftware.com.realmapp.repository.ParcelRepository
+import io.reactivex.BackpressureStrategy
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.realm.Realm
@@ -19,7 +18,7 @@ import io.realm.Sort
 import io.realm.kotlin.createObject
 import io.realm.kotlin.where
 import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.uiThread
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -52,33 +51,33 @@ class MainActivity : AppCompatActivity() {
             realm.deleteAll()
         }
 
-        experiment(realm)
+        experiment()
 
         // These operations are small enough that
         // we can generally safely run them on the UI thread.
-        basicCRUD(realm)
-        basicQuery(realm)
-        basicLinkQuery(realm)
-
-
-        // More complex operations can be executed on another thread, for example using
-        // Anko's doAsync extension method.
-        doAsync {
-            var info = ""
-
-            // Open the default realm. All threads must use its own reference to the realm.
-            // Those can not be transferred across threads.
-
-            // Realm implements the Closable interface, therefore
-            // we can make use of Kotlin's built-in extension method 'use' (pun intended).
-            Realm.getDefaultInstance().use { realm ->
-                info += complexReadWrite(realm)
-                info += complexQuery(realm)
-            }
-            uiThread {
-                showStatus(info)
-            }
-        }
+//        basicCRUD(realm)
+//        basicQuery(realm)
+//        basicLinkQuery(realm)
+//
+//
+//        // More complex operations can be executed on another thread, for example using
+//        // Anko's doAsync extension method.
+//        doAsync {
+//            var info = ""
+//
+//            // Open the default realm. All threads must use its own reference to the realm.
+//            // Those can not be transferred across threads.
+//
+//            // Realm implements the Closable interface, therefore
+//            // we can make use of Kotlin's built-in extension method 'use' (pun intended).
+//            Realm.getDefaultInstance().use { realm ->
+//                info += complexReadWrite(realm)
+//                info += complexQuery(realm)
+//            }
+//            uiThread {
+//                showStatus(info)
+//            }
+//        }
 
     }
 
@@ -204,37 +203,38 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun experiment(realm: Realm) {
+    private fun experiment() {
 
-        val handlerThread = HandlerThread("LOOPER_SCHEDULER");
-        handlerThread.start();
-        var looperScheduler : Scheduler? = null
-        synchronized(handlerThread) {
-            looperScheduler  = AndroidSchedulers.from(handlerThread.getLooper());
-        }
+        val parcelRepository = ParcelRepository()
 
-
-
-        disposable.add(firstParcel()
+        // Parcel Count Observer
+        disposable.add(parcelRepository.parcelCount
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnNext { t ->
-                    showStatus("Parcel received named: ${t.name}" )
-                    Log.d("xx", "Parcel: $t") }
-
-                .doOnError { error ->
-                    showStatus("${error.message}" )
-                    Log.d("xx","Error $error")}
-                .subscribeOn( looperScheduler )
+                .doOnNext { Log.d("XXX", "Count $it") }
+                .doOnNext { showStatus("Parcel count $it") }
                 .subscribe())
 
-        realm.executeTransaction { rlm ->
+        fun insertParcel(realm : Realm, name: String) {
             // Add a parcel
-            val parcel = rlm.createObject<Parcel>(0)
-            parcel.name = "A Parcel"
+            val parcel = realm.createObject<Parcel>(UUID.randomUUID().getMostSignificantBits())
+            parcel.name = name
         }
 
-        val parc = realm.where<Parcel>().findFirst()!!
-        showStatus("${parc.name}" )
+        fun insertParcels( number : Int){
+            doAsync {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.executeTransaction { rlm ->
+                        (1..number).forEach {
+                            insertParcel(rlm, "name $it --")
+                        }
+                    }
+                }
+            }
+        }
+
+        val values = listOf(100,500,1000,10000,3,4,5)
+
+        values.forEach { insertParcels(it) }
 
     }
 
