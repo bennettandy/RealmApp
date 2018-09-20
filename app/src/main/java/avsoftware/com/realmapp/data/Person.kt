@@ -1,4 +1,4 @@
-package avsoftware.com.realmapp.model
+package avsoftware.com.realmapp.data
 
 import io.realm.RealmList
 import io.realm.RealmObject
