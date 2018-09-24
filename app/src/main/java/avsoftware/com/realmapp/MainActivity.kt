@@ -10,19 +10,24 @@ import avsoftware.com.realmapp.data.Dog
 import avsoftware.com.realmapp.data.Parcel
 import avsoftware.com.realmapp.data.Person
 import avsoftware.com.realmapp.repository.ParcelRepository
+import io.reactivex.Flowable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
 import io.realm.Realm
 import io.realm.Sort
 import io.realm.kotlin.createObject
 import io.realm.kotlin.where
 import org.jetbrains.anko.doAsync
+import timber.log.Timber
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         const val TAG: String = "MainActivity"
+        const val MAX_CONCURRENCY = 1
     }
 
     private val disposable = CompositeDisposable()
@@ -34,6 +39,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+
+        testSingleThreadPipeline()
 
         rootLayout = findViewById(R.id.container)
 
@@ -235,11 +242,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val values = listOf(1000,5000,50000,10000,300,400,500)
+        val values = listOf(10,20,30,40,50)
 
         values.forEach { insertParcels(it) }
 
     }
 
+    fun testSingleThreadPipeline(){
+        // events
+        disposable.add(
+        Flowable.interval(1, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.computation())
+                .onBackpressureDrop({ Timber.d("--- Dropped Event $it") })
+                .flatMap({ event -> Flowable.just(event)
+                        .doOnNext { Timber.d("xxx Processing event $it")}
+                        .delay(10, TimeUnit.SECONDS).map {"xxx Processed $it"} }, MAX_CONCURRENCY) // maximum one concurrent execution
+                .doOnNext { Timber.d("xxx Output Processed Event $it")}
+                .subscribe()
+        )
 
+    }
 }

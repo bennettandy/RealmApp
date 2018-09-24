@@ -20,11 +20,14 @@ object RxRealm {
 //
 //    inline fun <reified T : RealmModel> firstItem(): Observable<T> = allItems<T>().map { it.first() }
 
+    /**
+     * Observable Realm Items
+     */
     inline fun <reified T : RealmModel> allItems(): Observable<List<T>> = Observable.create { emitter: ObservableEmitter<List<T>> ->
 
         val observableRealm = Realm.getDefaultInstance()
 
-        // first parcel
+        // all items
         val results = observableRealm.where(T::class.java).findAllAsync()
 
         // handle data changed event
@@ -51,7 +54,9 @@ object RxRealm {
             .doOnDispose { Log.d("XXX", "DISPOSE") }
             .doFinally { Log.d("XXX", "FINALLY") }
 
-
+    /**
+     * Observable Realm Item Count
+     */
     inline fun <reified T : RealmModel> itemCount(): Observable<Int> = Observable.create { emitter: ObservableEmitter<Int> ->
 
         val observableRealm = Realm.getDefaultInstance()
@@ -84,6 +89,7 @@ object RxRealm {
             .doOnSubscribe { Log.d("XXX", "SUBSCRIBE") }
             .doOnDispose { Log.d("XXX", "DISPOSE") }
             .doFinally { Log.d("XXX", "FINALLY") }
+
 
 
     /**

@@ -8,5 +8,8 @@ open class Parcel : RealmObject() {
     @PrimaryKey
     var id: Long = 0
 
-    var name: String? = null
+    var name: String = ""
+
+    var address: String = ""
+
 }
